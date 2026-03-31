@@ -1,0 +1,65 @@
+services:
+  keycloak-db:
+    image: postgres:16
+    container_name: keycloak-db
+    volumes:
+      - keycloak_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_DB}
+      POSTGRES_USER: ${KEYCLOAK_USER}
+      POSTGRES_PASSWORD: ${KEYCLOAK_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${KEYCLOAK_USER} -d ${KEYCLOAK_DB}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "5433:5432"
+    networks:
+      - ecommerce
+  keycloak-eco:
+    image: quay.io/keycloak/keycloak:26.3.5
+    container_name: keycloak-eco
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB}
+      KC_DB_USERNAME: ${KEYCLOAK_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_PASSWORD}
+    depends_on:
+      - keycloak-db
+    command:
+      start-dev
+    ports:
+      - "8180:8080"
+    networks:
+      - ecommerce
+
+  rabbitmq:
+    image: rabbitmq:4.0-management-alpine
+    container_name: rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbit_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - ecommerce
+
+
+networks:
+  ecommerce:
+
+volumes:
+  keycloak_data:
+  rabbit_data:
