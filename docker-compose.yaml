@@ -56,6 +56,25 @@ services:
     networks:
       - ecommerce
 
+  product-db:
+    image: postgres:16
+    container_name: product-db
+    volumes:
+      - product_db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${PRODUCT_DB}
+      POSTGRES_USER: ${PRODUCT_USER}
+      POSTGRES_PASSWORD: ${PRODUCT_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${PRODUCT_USER} -d ${PRODUCT_DB}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "5434:5432"
+    networks:
+      - ecommerce
+
 
 networks:
   ecommerce:
@@ -63,3 +82,4 @@ networks:
 volumes:
   keycloak_data:
   rabbit_data:
+  product_db:
